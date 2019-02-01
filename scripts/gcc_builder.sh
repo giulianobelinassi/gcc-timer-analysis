@@ -28,7 +28,7 @@ create_wrapper()
 {
     cd $PATH_TO_ME/cc_wrapper
 
-    make TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 TARGET_CXX_PATH=$3 \
+    make OUTPUT_FILE=$3 TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 TARGET_CXX_PATH=$3 \
         TARGET_CXX_NAME=$4
 
 }

@@ -7,9 +7,9 @@
 #include <sys/time.h>
 #include <sys/wait.h>
 
-#if !defined(COMPILER_NAME) || !defined(COMPILER_PATH)
- #error "Compiler not specified. Please set COMPILER_NAME and "
-        "COMPILER_PATH macros"
+#if !defined(COMPILER_NAME) || !defined(COMPILER_PATH) || !defined(OUTPUT_FILE)
+ #error "Compiler not specified. Please set COMPILER_NAME, COMPILER_PATH and "\
+        "OUTPUT_FILE macros."
 #endif
 
 struct data_info
@@ -90,7 +90,7 @@ int main(int argc, char* argv[], char* const envp[])
 
         gettimeofday(&out.t_end, NULL);
 
-        write_data("/tmp/data_1.txt", &out);
+        write_data(OUTPUT_FILE, &out);
     }
 
     return 0;
