@@ -28,8 +28,8 @@ create_wrapper()
 {
     cd $PATH_TO_ME/cc_wrapper
 
-    make OUTPUT_FILE=$3 TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 TARGET_CXX_PATH=$3 \
-        TARGET_CXX_NAME=$4
+    make OUTPUT_FILE=$PATH_TO_OUTDATA TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 \
+        TARGET_CXX_PATH=$3 TARGET_CXX_NAME=$4
 
 }
 
@@ -41,7 +41,6 @@ prepare_gcc()
     create_wrapper "$whereis_gcc" "gcc" "$whereis_gxx" "g++"
 
     cd $PATH_TO_BUILD
-
     CC=$PATH_TO_ME/cc_wrapper/gcc CXX=$PATH_TO_ME/cc_wrapper/g++ \
         $PATH_TO_SOURCE/configure "$@"
 
@@ -68,7 +67,7 @@ wrap_xgcc()
     mv xgcc _xgcc
     mv xg++ _xg++
 
-    create_wrapper "$whereis_gcc" "xgcc" "$whereis_gxx" "xg++"
+    create_wrapper "$whereis_gcc" "$whereis_gcc" "$whereis_gxx" "$whereis_gxx"
 
     mv $PATH_TO_ME/cc_wrapper/xgcc $PATH_TO_BUILD/gcc/xgcc
     mv $PATH_TO_ME/cc_wrapper/xg++ $PATH_TO_BUILD/gcc/xg++
