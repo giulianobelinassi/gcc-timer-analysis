@@ -57,7 +57,7 @@ static void write_data(const char* path, const struct data_info* out)
 {
     FILE* stream_out = fopen(path, "a+b");
     assert(stream_out);
-    fprintf(stream_out, "File: %s: Start: %ld.%06ld End: %ld.%06ld\n",
+    fprintf(stream_out, "File: %s Start: %ld.%06ld End: %ld.%06ld\n",
             out->source,
             out->t_start.tv_sec,
             out->t_start.tv_usec,
