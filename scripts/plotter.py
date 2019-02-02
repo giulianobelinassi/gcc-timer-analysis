@@ -4,9 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 def in_between(dot1, dot2):
-    a = dot2['start'] <= dot1['end']
-    print("***", a , "***")
-    return a
+    return dot2['start'] <= dot1['end']
 
 def plot_lines(y, start, end):
     plt.hlines(y, start, end, 'b', lw=4)
@@ -15,11 +13,13 @@ def plot_lines(y, start, end):
 
 def plot_timeline(data):
     bucket = []
+    y = np.zeros(len(data['start']))
 
-    for dot in data:
-        print(dot, len(bucket))
+    for j in range(len(data)):
+        dot = data[j]
         touched = False
         i = 0
+
         for i in range(len(bucket)):
             if not in_between(bucket[i], dot):
                 bucket[i] = dot
@@ -29,7 +29,9 @@ def plot_timeline(data):
         if not touched:
             bucket.append(dot)
 
-        plot_lines(i, dot['start'], dot['end'])
+        y[j] = i
+
+    plot_lines(y, data['start'], data['end'])
 
 input_file = open("/tmp/time_results-1.txt", "rb")
 
