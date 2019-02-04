@@ -1,11 +1,17 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
-#include <unistd.h>
 #include <assert.h>
 
 #include <sys/time.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+
+#include <limits.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <limits.h>
 
 #if !defined(COMPILER_NAME) || !defined(COMPILER_PATH) || !defined(OUTPUT_FILE)
  #error "Compiler not specified. Please set COMPILER_NAME, COMPILER_PATH and "\
@@ -55,15 +61,21 @@ static struct data_info* parse_args(int argc, char* argv[],
 
 static void write_data(const char* path, const struct data_info* out)
 {
-    FILE* stream_out = fopen(path, "a+b");
-    assert(stream_out);
-    fprintf(stream_out, "File: %s Start: %ld.%06ld End: %ld.%06ld\n",
+    static char buffer[PIPE_BUF];
+    int fd = open(path, O_WRONLY | O_APPEND | O_CREAT, S_IRUSR | S_IWUSR);
+    size_t n1, n2;
+    assert(fd);
+
+    n1 = snprintf(buffer, PIPE_BUF, "File: %s Start: %ld.%06ld End: %ld.%06ld\n",
             out->source,
             out->t_start.tv_sec,
             out->t_start.tv_usec,
             out->t_end.tv_sec,
             out->t_end.tv_usec);
-    fclose(stream_out);
+
+    n2 = write(fd, buffer, n1);
+    close(fd);
+    assert(n1 == n2);
 }
 
 int main(int argc, char* argv[], char* const envp[])
