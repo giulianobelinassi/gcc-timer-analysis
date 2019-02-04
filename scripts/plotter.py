@@ -9,12 +9,21 @@ def overlap(dot1, dot2):
     return dot2['start'] <= dot1['end']
 
 # Plot interval
-def plot_lines(y, start, end, labels, colors, default_color):
+def plot_lines(y, start, end, labels, colors, default_color, on_right):
     Y_WIDTH = 0.20
     X_OFFSET = 0.02
-    Y_OFFSET = 0.10
+    Y_OFFSET = (3*y.max() + 53)/560 # Linear interpolation with
+                                    # values f(8) = 0.10 and f(64) = 0.40
     char = 'A'
     black_label = 'Other Files'
+
+    if on_right:
+        centralizer = lambda x, y: y
+        ha = 'right'
+    else:
+        centralizer = lambda x, y: (x + y)/2
+        ha = 'center'
+
 
     # This is indeed slow when compared to array plot. However, matplotlib
     # seems not to like an array of labels
@@ -24,20 +33,25 @@ def plot_lines(y, start, end, labels, colors, default_color):
                        end[i] - X_OFFSET, colors[i],
                        label='[' + char + '] ' + labels[i],
                        lw=3)
-            plt.text((start[i] + end[i])/2,
+            plt.text(centralizer(start[i], end[i]),
                      y[i] + Y_OFFSET,
                      '[' + char + ']',
-                     ha='center')
+                     ha=ha)
             char = chr(ord(char) + 1)
         else:
-            plt.hlines(y[i], start[i] + X_OFFSET, end[i] - X_OFFSET, default_color, label=black_label, lw=3)
+            plt.hlines(y[i],
+                       start[i] + X_OFFSET,
+                       end[i] - X_OFFSET,
+                       default_color,
+                       label=black_label,
+                       lw=3)
             black_label = ''
 
     plt.vlines(start + X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, colors, lw=1)
     plt.vlines(end   - X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, colors, lw=1)
 
 # Plot the timeline.
-def plot_timeline(data, default_color = 'k', thresh = 30):
+def plot_timeline(data, default_color = 'k', thresh = 30, on_right=False):
     bucket = []
     possible_colors = ('b', 'r', 'y', 'm', 'g', 'c')
     current_color = 0
@@ -68,7 +82,13 @@ def plot_timeline(data, default_color = 'k', thresh = 30):
             colors[j] = possible_colors[current_color]
             current_color = (current_color + 1) % len(possible_colors)
 
-    plot_lines(y, data['start'], data['end'], data['filename'], colors, default_color)
+    plot_lines(y,
+               data['start'],
+               data['end'],
+               data['filename'],
+               colors,
+               default_color,
+               on_right)
 
 def print_usage_message():
     print( """
@@ -81,6 +101,7 @@ Arguments:
     --filter              Filter (UNKNOWN) files
     --default-color       Color for which non-relevant information will be print.
                           Default is 'k' (black).
+    --on-right            Put label on right-side of the bar.
     Any other argument will be ignored
 
 This program is Free Software and is distributed under the GNU Public License
@@ -94,22 +115,25 @@ def parse_args():
     output_path = None
     threshold = 30
     filter = False
+    on_right = False
     default_color = 'k'
 
     for i in range(argc):
         if sys.argv[i] == "--filter":
             filter = True
+        if sys.argv[i] == "--on-right":
+            on_right = True
         if i + 1 < argc:
             if sys.argv[i] == "--input-file":
                 input_path = sys.argv[i+1]
-            elif sys.argv[i] == "--treshold":
+            elif sys.argv[i] == "--threshold":
                 threshold = float(sys.argv[i+1])
             elif sys.argv[i] == "--output-file":
                 output_path = sys.argv[i+1]
             elif sys.argv[i] == "--default-color":
                 default_color = sys.argv[i+1]
 
-    return input_path, output_path, threshold, filter, default_color
+    return input_path, output_path, threshold, filter, default_color, on_right
 
 def do_filter(data):
     mask = []
@@ -120,7 +144,7 @@ def do_filter(data):
     return mask
 
 # Get arguments from argv.
-input_path, output_path, threshold, filter, default_color = parse_args()
+input_path, output_path, threshold, filter, default_color, on_right = parse_args()
 
 # No input file given.
 if input_path == None:
@@ -149,9 +173,9 @@ start_min = data['start'].min()
 data['start'] = data['start'] - start_min
 data['end']   = data['end']   - start_min
 
-plt.figure(figsize=(18,7))
+plt.figure(figsize=(18,10))
 
-plot_timeline(data, default_color, threshold)
+plot_timeline(data, default_color, threshold, on_right)
 ax = plt.gca()
 ax.legend()
 
