@@ -9,27 +9,41 @@ def overlap(dot1, dot2):
     return dot2['start'] <= dot1['end']
 
 # Plot interval
-def plot_lines(y, start, end):
+def plot_lines(y, start, end, labels, colors, default_color):
     Y_WIDTH = 0.20
     X_OFFSET = 0.02
-    plt.hlines(y, start + X_OFFSET, end - X_OFFSET, 'b', label='test', lw=1)
-    plt.vlines(start + X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, 'b', lw=1)
-    plt.vlines(end   - X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, 'b', lw=1)
-
-# Plot the file name right above its interval
-def plot_labels(y_pos, start, end, label, thresh):
     Y_OFFSET = 0.10
-    for i in range(len(end)):
-        if end[i] - start[i] > thresh:
+    char = 'A'
+    black_label = 'Other Files'
+
+    # This is indeed slow when compared to array plot. However, matplotlib
+    # seems not to like an array of labels
+    for i in range(len(y)):
+        if colors[i] != default_color:
+            plt.hlines(y[i], start[i] + X_OFFSET,
+                       end[i] - X_OFFSET, colors[i],
+                       label='[' + char + '] ' + labels[i],
+                       lw=3)
             plt.text((start[i] + end[i])/2,
-                     y_pos[i] + Y_OFFSET,
-                     label[i],
+                     y[i] + Y_OFFSET,
+                     '[' + char + ']',
                      ha='center')
+            char = chr(ord(char) + 1)
+        else:
+            plt.hlines(y[i], start[i] + X_OFFSET, end[i] - X_OFFSET, default_color, label=black_label, lw=3)
+            black_label = ''
+
+    plt.vlines(start + X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, colors, lw=1)
+    plt.vlines(end   - X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, colors, lw=1)
 
 # Plot the timeline.
-def plot_timeline(data):
+def plot_timeline(data, default_color = 'k', thresh = 30):
     bucket = []
+    possible_colors = ('b', 'r', 'y', 'm', 'g', 'c')
+    current_color = 0
+
     y = np.zeros(len(data['start']))
+    colors = np.full(len(data['start']), default_color)
 
     for j in range(len(data)):
         dot = data[j]
@@ -50,8 +64,11 @@ def plot_timeline(data):
         #store its bucket.
         y[j] = i
 
-    plot_lines(y, data['start'], data['end'])
-    plot_labels(y, data['start'], data['end'], data['filename'], 30)
+        if dot['end'] - dot['start'] > thresh:
+            colors[j] = possible_colors[current_color]
+            current_color = (current_color + 1) % len(possible_colors)
+
+    plot_lines(y, data['start'], data['end'], data['filename'], colors, default_color)
 
 def print_usage_message():
     print( """
@@ -62,6 +79,8 @@ Arguments:
     --threshold           Display the name of file such that its time is greater
                           than the threshold
     --filter              Filter (UNKNOWN) files
+    --default-color       Color for which non-relevant information will be print.
+                          Default is 'k' (black).
     Any other argument will be ignored
 
 This program is Free Software and is distributed under the GNU Public License
@@ -75,6 +94,7 @@ def parse_args():
     output_path = None
     threshold = 30
     filter = False
+    default_color = 'k'
 
     for i in range(argc):
         if sys.argv[i] == "--filter":
@@ -86,8 +106,10 @@ def parse_args():
                 threshold = float(sys.argv[i+1])
             elif sys.argv[i] == "--output-file":
                 output_path = sys.argv[i+1]
+            elif sys.argv[i] == "--default-color":
+                default_color = sys.argv[i+1]
 
-    return input_path, output_path, threshold, filter
+    return input_path, output_path, threshold, filter, default_color
 
 def do_filter(data):
     mask = []
@@ -98,7 +120,7 @@ def do_filter(data):
     return mask
 
 # Get arguments from argv.
-input_path, output_path, threshold, filter = parse_args()
+input_path, output_path, threshold, filter, default_color = parse_args()
 
 # No input file given.
 if input_path == None:
@@ -129,8 +151,9 @@ data['end']   = data['end']   - start_min
 
 plt.figure(figsize=(18,7))
 
-plot_timeline(data)
+plot_timeline(data, default_color, threshold)
 ax = plt.gca()
+ax.legend()
 
 plt.xlabel('Time (s)')
 plt.ylabel('Makefile Job')
