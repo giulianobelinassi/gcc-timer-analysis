@@ -12,15 +12,16 @@ def overlap(dot1, dot2):
 def plot_lines(y, start, end, labels, colors, default_color, on_right):
     Y_WIDTH = 0.20
     X_OFFSET = 0.02
-    Y_OFFSET = (3*y.max() + 53)/560 # Linear interpolation with
-                                    # values f(8) = 0.10 and f(64) = 0.40
     char = 'A'
     black_label = 'Other Files'
 
     if on_right:
+        Y_OFFSET = 0
         centralizer = lambda x, y: y
-        ha = 'right'
+        ha = 'left'
     else:
+        Y_OFFSET = (3*y.max() + 53)/560 # Linear interpolation with
+                                        # values f(8) = 0.10 and f(64) = 0.40
         centralizer = lambda x, y: (x + y)/2
         ha = 'center'
 
@@ -44,14 +45,14 @@ def plot_lines(y, start, end, labels, colors, default_color, on_right):
                        end[i] - X_OFFSET,
                        default_color,
                        label=black_label,
-                       lw=3)
+                       lw=1)
             black_label = ''
 
     plt.vlines(start + X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, colors, lw=1)
     plt.vlines(end   - X_OFFSET, y + Y_WIDTH, y - Y_WIDTH, colors, lw=1)
 
 # Plot the timeline.
-def plot_timeline(data, default_color = 'k', thresh = 30, on_right=False):
+def plot_timeline(data, dependencies = None, default_color = 'k', thresh = 30, on_right=False):
     bucket = []
     possible_colors = ('b', 'r', 'y', 'm', 'g', 'c')
     current_color = 0
@@ -78,9 +79,15 @@ def plot_timeline(data, default_color = 'k', thresh = 30, on_right=False):
         #store its bucket.
         y[j] = i
 
-        if dot['end'] - dot['start'] > thresh:
-            colors[j] = possible_colors[current_color]
-            current_color = (current_color + 1) % len(possible_colors)
+        if dependencies is None:
+            if dot['end'] - dot['start'] > thresh:
+                colors[j] = possible_colors[current_color]
+                current_color = (current_color + 1) % len(possible_colors)
+        else:
+            for dep in dependencies:
+                if data[j]['filename'] == dep:
+                    colors[j] = possible_colors[current_color]
+                    current_color = (current_color + 1) % len(possible_colors)
 
     plot_lines(y,
                data['start'],
@@ -95,14 +102,16 @@ def print_usage_message():
 Time analyzer plotter for the GCC project.
 Arguments:
     --input-file          File to be read.
-    --output-file         File to save the plot
+    --output-file         File to save the plot.
     --threshold           Display the name of file such that its time is greater
-                          than the threshold
-    --filter              Filter (UNKNOWN) files
+                          than the threshold.
+    --filter              Filter (UNKNOWN) files.
     --default-color       Color for which non-relevant information will be print.
                           Default is 'k' (black).
     --on-right            Put label on right-side of the bar.
-    Any other argument will be ignored
+    --dpi                 Dots per inch of output image.
+    --dependency-file     File with dependencies to certain file.
+    Any other argument will be ignored.
 
 This program is Free Software and is distributed under the GNU Public License
 version 2. There is no warranty; not even from MERCHANTABILITY or FITNESS FOR
@@ -117,6 +126,8 @@ def parse_args():
     filter = False
     on_right = False
     default_color = 'k'
+    dpi = 300
+    dependency_path = None
 
     for i in range(argc):
         if sys.argv[i] == "--filter":
@@ -132,8 +143,13 @@ def parse_args():
                 output_path = sys.argv[i+1]
             elif sys.argv[i] == "--default-color":
                 default_color = sys.argv[i+1]
+            elif sys.argv[i] == "--dpi":
+                dpi = int(sys.argv[i+1])
+            elif sys.argv[i] == "--dependency-file":
+                dependency_path = sys.argv[i+1]
 
-    return input_path, output_path, threshold, filter, default_color, on_right
+    return (input_path, output_path, threshold, filter, default_color,
+            on_right, dpi, dependency_path)
 
 def do_filter(data):
     mask = []
@@ -143,8 +159,20 @@ def do_filter(data):
 
     return mask
 
+def dependency_filter(deps):
+    mask = []
+    for i in range(len(deps)):
+        if "(UNKNOWN)" not in deps[i]:
+            mask.append(i);
+
+    return mask
+
+
+dependencies = None
+
 # Get arguments from argv.
-input_path, output_path, threshold, filter, default_color, on_right = parse_args()
+(input_path, output_path, threshold, filter, default_color,
+        on_right, dpi, dependency_path) = parse_args()
 
 # No input file given.
 if input_path == None:
@@ -160,9 +188,22 @@ data = np.genfromtxt(input_file,
                      converters={1: lambda x: x.decode('utf-8').split('/')[-1]},
                      dtype=('U64', float, float))
 
+
 if filter:
     mask = do_filter(data)
     data = data[mask]
+
+if dependency_path is not None:
+    dependency_file = open(dependency_path, "rb")
+    dependencies = np.genfromtxt(dependency_file,
+                         usecols=(1),
+                         names=('filename'),
+                         converters={1: lambda x: x.decode('utf-8').split('/')[-1]},
+                         dtype=('U64'))
+
+    mask = dependency_filter(dependencies)
+    dependencies = dependencies[mask]
+
 
 # Sort the data. Required by the greedy interval graph coloring algorithm
 data.view('U64,float,float').sort(order=['f1', 'f2'], axis=0)
@@ -175,7 +216,7 @@ data['end']   = data['end']   - start_min
 
 plt.figure(figsize=(18,10))
 
-plot_timeline(data, default_color, threshold, on_right)
+plot_timeline(data, dependencies, default_color, threshold, on_right)
 ax = plt.gca()
 ax.legend()
 
@@ -184,6 +225,6 @@ plt.ylabel('Makefile Job')
 plt.title('Time Interval Graphic of Each File')
 
 if output_path is not None:
-    plt.savefig(output_path, dpi=100)
+    plt.savefig(output_path, dpi=dpi)
 else:
     plt.show()

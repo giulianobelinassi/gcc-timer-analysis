@@ -1,6 +1,6 @@
 CC=gcc
 CXX=g++
-CFLAGS=-std=c99 -march=native -O3 -Wall -pedantic -flto
+CFLAGS=-march=native -O3 -Wall -pedantic -flto
 LDFLAGS=
 
 TARGET_CC_PATH=$(word 2,$(shell whereis $(CC)))

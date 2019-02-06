@@ -27,6 +27,8 @@ print_usage_message()
 create_wrapper()
 {
     cd $PATH_TO_ME/cc_wrapper
+    make OUTPUT_FILE=$PATH_TO_OUTDATA TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 \
+        TARGET_CXX_PATH=$3 TARGET_CXX_NAME=$4 clean
 
     make OUTPUT_FILE=$PATH_TO_OUTDATA TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 \
         TARGET_CXX_PATH=$3 TARGET_CXX_NAME=$4
@@ -84,6 +86,16 @@ continue_stage1()
     cd $LAUNCHED_PATH
 }
 
+is_bootstrapping()
+{
+    for i in $@; do
+        if [ "$i" == "--disable-bootstrap" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 create_directories()
 {
     mkdir -p $PATH_TO_BUILD
@@ -97,7 +109,9 @@ fi
 shift 4
 
 create_directories
-prepare_gcc
+prepare_gcc $@
 create_xgcc
-wrap_xgcc
-continue_stage1
+if is_bootstrapping $@; then
+    wrap_xgcc
+    continue_stage1
+fi
