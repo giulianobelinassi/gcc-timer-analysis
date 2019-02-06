@@ -27,8 +27,6 @@ print_usage_message()
 create_wrapper()
 {
     cd $PATH_TO_ME/cc_wrapper
-    make OUTPUT_FILE=$PATH_TO_OUTDATA TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 \
-        TARGET_CXX_PATH=$3 TARGET_CXX_NAME=$4 clean
 
     make OUTPUT_FILE=$PATH_TO_OUTDATA TARGET_CC_PATH=$1 TARGET_CC_NAME=$2 \
         TARGET_CXX_PATH=$3 TARGET_CXX_NAME=$4
