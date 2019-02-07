@@ -183,9 +183,9 @@ input_file = open(input_path, "rb")
 
 # Read data frame from file.
 data = np.genfromtxt(input_file,
-                     usecols=(1, 3, 5),
+                     usecols=(0, 2, 4),
                      names=('filename', 'start', 'end'),
-                     converters={1: lambda x: x.decode('utf-8').split('/')[-1]},
+                     converters={0: lambda x: x.decode('utf-8').split('/')[-1]},
                      dtype=('U64', float, float))
 
 
@@ -196,9 +196,9 @@ if filter:
 if dependency_path is not None:
     dependency_file = open(dependency_path, "rb")
     dependencies = np.genfromtxt(dependency_file,
-                         usecols=(1),
+                         usecols=(0),
                          names=('filename'),
-                         converters={1: lambda x: x.decode('utf-8').split('/')[-1]},
+                         converters={0: lambda x: x.decode('utf-8').split('/')[-1]},
                          dtype=('U64'))
 
     mask = dependency_filter(dependencies)

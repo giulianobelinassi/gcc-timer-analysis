@@ -88,10 +88,10 @@ is_bootstrapping()
 {
     for i in $@; do
         if [ "$i" == "--disable-bootstrap" ]; then
-            return 0
+            return 1
         fi
     done
-    return 1
+    return 0
 }
 
 create_directories()
