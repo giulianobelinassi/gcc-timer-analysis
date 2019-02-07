@@ -18,6 +18,8 @@
         "OUTPUT_FILE macros."
 #endif
 
+#define STATIC_LEN(v) (sizeof(v)/sizeof(*(v)))
+
 struct data_info
 {
     const char* source;
@@ -47,14 +49,30 @@ static struct data_info* parse_args(int argc, char* argv[],
                                     struct data_info* out)
 {
     int i;
+    out->source = NULL;
+
     for (i = 0; i < argc; i++)
     {
-        if (is_source_code(argv[i]))
+        if (!strncmp(argv[i], "-o", STATIC_LEN("-o")))
         {
-            out->source = argv[i];
+            out->source = argv[i+1];
             return out;
         }
     }
+
+    if (!out->source)
+    {
+        /* Try to find source file */
+        for (i = 0; i < argc; i++)
+        {
+            if (is_source_code(argv[i]))
+            {
+                out->source = argv[i];
+                return out;
+            }
+        }
+    }
+
     out->source = "(UNKNOWN)";
     return out;
 }
@@ -66,7 +84,7 @@ static void write_data(const char* path, const struct data_info* out)
     size_t n1, n2;
     assert(fd);
 
-    n1 = snprintf(buffer, PIPE_BUF, "File: %s Start: %ld.%06ld End: %ld.%06ld\n",
+    n1 = snprintf(buffer, PIPE_BUF, "%s Start: %ld.%06ld End: %ld.%06ld\n",
             out->source,
             out->t_start.tv_sec,
             out->t_start.tv_usec,
