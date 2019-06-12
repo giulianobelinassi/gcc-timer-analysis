@@ -1,0 +1,160 @@
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <assert.h>
+
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+
+#include <limits.h>
+#include <unistd.h>
+#include <fcntl.h>
+
+#include <limits.h>
+
+#define STATIC_LEN(v) (sizeof(v)/sizeof(*(v)))
+
+#define STRINGFY(s) #s
+#define DEFINE_SENSOR(s) STRINGFY(s)
+
+const char* path_to_sensors[] = {
+    #include "sensors.def"
+};
+
+#define NUM_SENSORS STATIC_LEN(path_to_sensors)
+
+struct input_args
+{
+    const char* output_file;
+    int freq;
+};
+
+struct sensors_object
+{
+    int sensor[NUM_SENSORS];
+};
+
+bool signal_arrived = false;
+void signal_handler(int signo)
+{
+    if (signo == SIGUSR1)
+        signal_arrived = true;
+}
+
+
+static struct input_args* parse_args(int argc, char* argv[],
+                                     struct input_args* args)
+{
+    int i;
+
+    args->output_file = "out.txt";
+    args->freq = 10000;
+
+    for (i = 0; i < argc; i++)
+    {
+        if (i+1 < argc)
+        {
+            if (!strncmp(argv[i], "-o", STATIC_LEN("-o")))
+                args->output_file = argv[i+1];
+
+            else if (!strncmp(argv[i], "-f", STATIC_LEN("-f")))
+                args->freq = atoi(argv[i+1]);
+        }
+    }
+
+    return args;
+}
+
+static struct sensors_object* open_sensors(struct sensors_object* obj)
+{
+    int i;
+
+    for (i = 0; i < NUM_SENSORS; ++i)
+    {
+        obj->sensor[i] = open(path_to_sensors[i], O_RDONLY);
+        assert(obj->sensor[i] > 0);
+    }
+
+    return obj;
+}
+
+static struct sensors_object* close_sensors(struct sensors_object* obj)
+{
+    int i;
+
+    for (i = 0; i < NUM_SENSORS; ++i)
+        close(obj->sensor[i]);
+
+    return obj;
+}
+
+static void probe_and_write_data(int fd, const struct sensors_object* sensors)
+{
+    struct timeval time;
+    static char read_buffer[PIPE_BUF];
+    static char write_buffer[PIPE_BUF];
+    size_t n1, n2;
+    int i;
+
+    gettimeofday(&time, NULL);
+
+    for (i = 0; i < NUM_SENSORS; ++i)
+    {
+        int sensor_val;
+
+        n1 = read(sensors->sensor[i], read_buffer, PIPE_BUF);
+        assert (n1 >= 0);
+        if (n1 == 0)
+            continue;
+
+        sensor_val = atoi(read_buffer);
+
+        n1 = snprintf(write_buffer, PIPE_BUF, "sensor: %u, value: %d timestamp: %ld.%06ld\n",
+            i,
+            sensor_val,
+            time.tv_sec,
+            time.tv_usec);
+
+        n2 = write(fd, write_buffer, n1);
+
+        assert (n1 == n2);
+    }
+
+}
+
+int main(int argc, char* argv[], char* const envp[])
+{
+    static struct input_args args;
+    static struct sensors_object sensors;
+    parse_args(argc, argv, &args);
+
+    if (signal(SIGUSR1, signal_handler) == SIG_ERR)
+    {
+        fputs("Can't catch SIGUSR1\n", stderr);
+        return 1;
+    }
+
+
+    int fd = open(args.output_file, O_WRONLY |
+                                     O_APPEND |
+                                     O_CREAT,
+                                     S_IRUSR |
+                                     S_IWUSR);
+
+    assert(fd > 0);
+
+    while (!signal_arrived)
+    {
+        open_sensors(&sensors);
+        probe_and_write_data(fd, &sensors);
+        close_sensors(&sensors);
+
+        usleep(args.freq);
+    }
+
+    close(fd);
+
+    return 0;
+}

@@ -1,0 +1,4 @@
+DEFINE_SENSOR (/sys/module/fam15h_power/drivers/pci:fam15h_power/0000:00:18.4/hwmon/hwmon8/power1_input),
+DEFINE_SENSOR (/sys/module/fam15h_power/drivers/pci:fam15h_power/0000:00:1a.4/hwmon/hwmon9/power1_input),
+DEFINE_SENSOR (/sys/module/fam15h_power/drivers/pci:fam15h_power/0000:00:1c.4/hwmon/hwmon10/power1_input),
+DEFINE_SENSOR (/sys/module/fam15h_power/drivers/pci:fam15h_power/0000:00:1e.4/hwmon/hwmon11/power1_input),
