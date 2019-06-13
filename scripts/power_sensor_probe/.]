@@ -51,7 +51,7 @@ static struct input_args* parse_args(int argc, char* argv[],
     int i;
 
     args->output_file = "out.txt";
-    args->freq = 5000;
+    args->freq = 10000;
 
     for (i = 0; i < argc; i++)
     {
@@ -117,24 +117,6 @@ static char* to_string(int x, char* buffer)
     return ptr;
 }
 
-static char* to_6d_string(int x, char* buffer)
-{
-    int i;
-    char* ptr;
-    for (i = 0; i < 6; ++i)
-        buffer[i] = '0';
-
-    ptr = &buffer[i];
-    buffer[i--] = '\0';
-
-    do {
-        buffer[i--] = x%10 + '0';
-        x = x/10;
-    } while (x > 0);
-
-    return ptr;
-}
-
 static void probe_and_write_data(int fd, const struct sensors_object* sensors)
 {
     static char read_buffer[PIPE_BUF];
@@ -158,17 +140,19 @@ static void probe_and_write_data(int fd, const struct sensors_object* sensors)
         if (n1 == 0)
             continue;
 
-        ptr = write_buffer + n1 + 1;
+        ptr = write_buffer + n1;
         *ptr++ = ' ';
 
         ptr = to_string(time.tv_sec, ptr);
         *ptr++ = '.';
-        ptr = to_6d_string(time.tv_usec, ptr);
+        ptr = to_string(time.tv_usec, ptr);
         *ptr++ = '\n';
         *ptr = '\0';
         n1 = (size_t) (ptr - write_buffer);
 
         n2 = write(fd, write_buffer, n1);
+
+        printf("%ld\n", time.tv_sec);
     }
 
 }
