@@ -56,7 +56,7 @@ prepare_gcc()
 
 start_power_sensor_probing()
 {
-    $PATH_TO_ME/power_sensor -f 5000 -o sensors_data.txt
+    $PATH_TO_ME/power_sensor_probe/power_sensor -f 5000 -o ../sensors_data.txt &
 }
 
 stop_power_sensor_probing()
@@ -124,7 +124,7 @@ shift 4
 
 create_directories
 prepare_power_sensor_probe
-start_power_sensor_probe
+start_power_sensor_probing
 prepare_gcc $@
 create_xgcc
 if is_bootstrapping $@; then
