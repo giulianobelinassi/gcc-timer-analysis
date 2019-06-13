@@ -137,12 +137,11 @@ static char* to_6d_string(int x, char* buffer)
 
 static void probe_and_write_data(int fd, const struct sensors_object* sensors)
 {
-    static char read_buffer[PIPE_BUF];
     static char write_buffer[PIPE_BUF];
 
     struct timeval time;
     char *ptr;
-    size_t n1, n2;
+    size_t n;
     int i;
 
     gettimeofday(&time, NULL);
@@ -153,12 +152,12 @@ static void probe_and_write_data(int fd, const struct sensors_object* sensors)
         *ptr++ = i + '0';
         *ptr++ = ' ';
 
-        n1 = read(sensors->sensor[i], ptr, PIPE_BUF);
-        assert (n1 >= 0);
-        if (n1 == 0)
+        n = read(sensors->sensor[i], ptr, PIPE_BUF);
+        assert (n >= 0);
+        if (n == 0)
             continue;
 
-        ptr = write_buffer + n1 + 1;
+        ptr = write_buffer + n + 1;
         *ptr++ = ' ';
 
         ptr = to_string(time.tv_sec, ptr);
@@ -166,9 +165,8 @@ static void probe_and_write_data(int fd, const struct sensors_object* sensors)
         ptr = to_6d_string(time.tv_usec, ptr);
         *ptr++ = '\n';
         *ptr = '\0';
-        n1 = (size_t) (ptr - write_buffer);
-
-        n2 = write(fd, write_buffer, n1);
+        n = (size_t) (ptr - write_buffer);
+        n = write(fd, write_buffer, n);
     }
 
 }

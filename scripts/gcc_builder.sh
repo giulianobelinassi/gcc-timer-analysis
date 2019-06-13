@@ -33,6 +33,13 @@ create_wrapper()
 
 }
 
+prepare_power_sensor_probe()
+{
+    cd $PATH_TO_ME/power_sensor_probe
+
+    make
+}
+
 prepare_gcc()
 {
     local whereis_gcc=$(whereis gcc | awk '{print $2}')
@@ -47,6 +54,15 @@ prepare_gcc()
     cd $LAUNCHED_PATH
 }
 
+start_power_sensor_probing()
+{
+    $PATH_TO_ME/power_sensor -f 5000 -o sensors_data.txt
+}
+
+stop_power_sensor_probing()
+{
+    pkill --signal SIGUSR1 power_sensor
+}
 
 create_xgcc()
 {
@@ -107,9 +123,12 @@ fi
 shift 4
 
 create_directories
+prepare_power_sensor_probe
+start_power_sensor_probe
 prepare_gcc $@
 create_xgcc
 if is_bootstrapping $@; then
     wrap_xgcc
     continue_stage1
 fi
+stop_power_sensor_probing
