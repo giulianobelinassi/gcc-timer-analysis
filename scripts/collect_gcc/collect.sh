@@ -1,7 +1,7 @@
 #!/bin/bash
 
 NUM_EXECUTIONS=30
-NUM_THREADS=(1)
+NUM_THREADS=(1 2 4 8)
 
 GXX=/tmp/gcc10_parallel/usr/local/bin/g++
 FILE_PREFIX="$HOME/gcc_git/build_parallel/gcc/"
@@ -62,7 +62,7 @@ do_analysis()
                 echo "In test $i with $thread threads..."
 
                 sleep 1s
-                times=$($GXX $GXX_FLAGS --param=num-threads=$thread ${FILE_PREFIX}${FILE})
+                times=$({ time -p timeout 120 $GXX $GXX_FLAGS --param=num-threads=$thread ${FILE_PREFIX}${FILE} ; } 2>&1 )
                 local error=$?
 
                 if [ $error -eq 0 ]; then
