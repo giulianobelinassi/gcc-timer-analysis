@@ -16,10 +16,10 @@ SYS_LABEL           = 7
 
 NUM_LABELS          = SYS_LABEL + 1
 
-FOLDER_PREFIX = "/home/giulianob/data_new/"
+FOLDER_PREFIX = "/tmp/data/"
 
-ALPHA = 0.95
-Z_ALPHA = -scipy.stats.norm.ppf((1 - ALPHA)/2.)
+ALPHA = 0.99
+Z_ALPHA = -scipy.stats.norm.ppf((1 + ALPHA)/2., 29)
 
 def parse_file(thread, num):
     filename = FOLDER_PREFIX + "time_gcc_{}_{}.dat".format(thread, num)
@@ -62,6 +62,11 @@ def parse_file(thread, num):
             idx = USER_LABEL
         elif label == "sys":
             idx = SYS_LABEL
+
+        time = time.replace(',', '.')
+
+        if time[-1] == 's':
+            time = time[0:-2]
 
         times[idx] = float(time)
 
@@ -190,26 +195,20 @@ def plot_expected_time_after_rtl_bars(gimple_speedups, data, labels, estimate_rt
     ipa_mean = np.mean(data[0][IPA_LABEL])
     rtl_mean = np.mean(data[0][RTL_LABEL])
 
-
-    print(parser_mean)
-    print(ipa_mean)
-    print(rtl_mean)
-
-
     real_means = []
     real_means_estimate = []
 
     gimple_means = []
     rtl_means = []
 
+    real_sem = []
+
     for i in range(len(data)):
         d = data[i]
         label = labels[i]
 
         real_mean = np.mean(d[REAL_LABEL])
-        real_sem = scipy.stats.sem(d[REAL_LABEL])
-
-       # h = gimple_sem * Z_ALPHA
+        real_sem.append(scipy.stats.sem(d[REAL_LABEL]))
 
         time = real_mean
         real_means.append(time)
@@ -224,9 +223,6 @@ def plot_expected_time_after_rtl_bars(gimple_speedups, data, labels, estimate_rt
                 ax.text(x_data, y_data + y_shift, "x{:.2f}".format(speedup), ha='center')
 
             rtl_means.append(np.mean(d[RTL_LABEL]))
-
-        #ax.bar(x_data, y_data, color = 'blue', align = 'center', label = 'Parallel GIMPLE')
-
 
         time = real_mean + (-1 + 1./(gimple_speedups[i]))*rtl_mean
 
@@ -274,9 +270,11 @@ def plot_expected_time_after_rtl_bars(gimple_speedups, data, labels, estimate_rt
     ax.bar(labels, plt_others, color = 'black', align = 'center', label = 'Others')
     ax.legend(loc="upper right")
 
-    ax.set_ylim(0, 70)
+    ax.set_ylim(0, 100)
 
-        #ax.errorbar(label, y_data, yerr = h, color = '#297083', ls = 'none', lw = 2, capthick = 2)
+    h = np.array(real_sem) * Z_ALPHA
+
+    ax.errorbar(labels, real, yerr = h, color = 'black', ls = 'none', lw = 1, capthick = 1, capsize = 3)
 
 
 def plot_pie(data):
