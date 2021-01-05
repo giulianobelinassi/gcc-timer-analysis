@@ -99,7 +99,7 @@ static void write_data(const char* path, const struct data_info* out)
 int main(int argc, char* argv[], char* const envp[])
 {
     static struct data_info out;
-    int pid;
+    int pid, ret = 0;
 
     /* Lie to gcc. Tell that we are running from system */
     argv[0] = COMPILER_NAME;
@@ -114,14 +114,16 @@ int main(int argc, char* argv[], char* const envp[])
     else
     {
         /* Parent */
-        int return_stats;
         parse_args(argc, argv, &out);
-        waitpid(pid, &return_stats, 0);
+        waitpid(pid, &ret, 0);
 
         gettimeofday(&out.t_end, NULL);
+
+        if (WIFEXITED(ret))
+            ret = WEXITSTATUS(ret);
 
         write_data(OUTPUT_FILE, &out);
     }
 
-    return 0;
+    return ret;
 }
